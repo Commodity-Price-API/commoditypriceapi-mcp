@@ -1,6 +1,6 @@
 {
   "name": "@commoditypriceapi/mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Official MCP server for CommodityPriceAPI \u2014 real-time and historical commodity rates (gold, silver, oil, and 130+ more) as MCP tools for Claude, Cursor, Windsurf, and any MCP client.",
   "keywords": [
     "mcp",
@@ -13,10 +13,10 @@
     "ai-tools"
   ],
   "homepage": "https://commoditypriceapi.com",
-  "bugs": "https://github.com/commoditypriceapi/commoditypriceapi-mcp/issues",
+  "bugs": "https://github.com/Commodity-Price-API/commoditypriceapi-mcp/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/commoditypriceapi/commoditypriceapi-mcp.git"
+    "url": "git+https://github.com/Commodity-Price-API/commoditypriceapi-mcp.git"
   },
   "license": "MIT",
   "author": "CommodityPriceAPI",

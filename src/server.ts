@@ -5,7 +5,7 @@ import { callCommodityApi, CommodityApiError } from "./client.js";
 const symbolsParam = z
   .string()
   .describe(
-    "Comma-separated commodity symbols, e.g. 'XAU,XAG,BRENTOIL'. See the list_symbols tool for valid values."
+    "Comma-separated commodity symbols, e.g. 'XAU,XAG,BRENTOIL-SPOT'. See the list_symbols tool for valid values. Invalid symbols in a multi-symbol request are silently omitted from the response, not errored."
   );
 
 const dateParam = z.string().describe("Date in YYYY-MM-DD format.");
@@ -80,7 +80,7 @@ function guidanceFor(code: number, errorType: string): string {
 export function createServer(): McpServer {
   const server = new McpServer({
     name: "commoditypriceapi-mcp",
-    version: "1.0.0",
+    version: "1.0.1",
   });
 
   server.registerTool(
