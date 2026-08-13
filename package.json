@@ -1,0 +1,53 @@
+{
+  "name": "@commoditypriceapi/mcp",
+  "version": "1.0.0",
+  "description": "Official MCP server for CommodityPriceAPI \u2014 real-time and historical commodity rates (gold, silver, oil, and 130+ more) as MCP tools for Claude, Cursor, Windsurf, and any MCP client.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "commodity-prices",
+    "gold-price",
+    "silver-price",
+    "commoditypriceapi",
+    "claude",
+    "ai-tools"
+  ],
+  "homepage": "https://commoditypriceapi.com",
+  "bugs": "https://github.com/commoditypriceapi/commoditypriceapi-mcp/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/commoditypriceapi/commoditypriceapi-mcp.git"
+  },
+  "license": "MIT",
+  "author": "CommodityPriceAPI",
+  "type": "module",
+  "bin": {
+    "commoditypriceapi-mcp": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/cli.js",
+    "prepublishOnly": "npm run build",
+    "dev": "tsc -p tsconfig.json --watch",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
