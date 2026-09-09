@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-MCP server (stdio transport) exposing CommodityPriceAPI v2 as 8 MCP tools. Published to npm as `@commoditypriceapi/mcp`, run by clients via `npx`. TypeScript, ESM (`"type": "module"`), Node >= 18, no test suite or linter configured.
+MCP server (stdio transport) exposing CommodityPriceAPI v3 as 8 MCP tools. Published to npm as `@commoditypriceapi/mcp`, run by clients via `npx`. TypeScript, ESM (`"type": "module"`), Node >= 18, no test suite or linter configured.
 
 ## Commands
 
@@ -23,7 +23,7 @@ Three-layer flow, one file each in `src/`:
 
 - `cli.ts` — bin entry point. Creates the server and connects it to `StdioServerTransport`. **stdout is reserved for the MCP protocol stream — all logging must go to stderr** (`console.error`).
 - `server.ts` — `createServer()` registers all 8 tools on an `McpServer`, with zod input schemas. Every tool handler is a thin try/catch wrapper around `callCommodityApi()`: success → `textResult()` (pretty-printed JSON), failure → `errorResult()`.
-- `client.ts` — `callCommodityApi(path, params)` is the single HTTP function all tools go through. Hardcodes `BASE_URL` (`https://api.commoditypriceapi.com/v2`), reads `COMMODITYPRICEAPI_KEY` at call time (not startup), sends the key via both `x-api-key` header and `apiKey` query param, applies an AbortController timeout (`COMMODITYPRICEAPI_REQUEST_TIMEOUT_MS`, default 15000). All failures — timeout (499), unreachable (502), non-JSON body, upstream error status — are normalized into `CommodityApiError { code, errorType, message, path }`.
+- `client.ts` — `callCommodityApi(path, params)` is the single HTTP function all tools go through. Hardcodes `BASE_URL` (`https://api.commoditypriceapi.com/v3`), reads `COMMODITYPRICEAPI_KEY` at call time (not startup), sends the key via both `x-api-key` header and `apiKey` query param, applies an AbortController timeout (`COMMODITYPRICEAPI_REQUEST_TIMEOUT_MS`, default 15000). All failures — timeout (499), unreachable (502), non-JSON body, upstream error status — are normalized into `CommodityApiError { code, errorType, message, path, unresolved? }`. v3 returns HTTP 206 (still `response.ok`, body passed through) with an `unresolved` map when some requested symbols could not be resolved, and attaches the same map to 404 `SYMBOL_NOT_FOUND`; `errorResult()` surfaces it in the tool result.
 
 `index.ts` is the library export (`createServer` only).
 

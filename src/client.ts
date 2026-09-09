@@ -1,16 +1,34 @@
-const BASE_URL = "https://api.commoditypriceapi.com/v2";
+const BASE_URL = "https://api.commoditypriceapi.com/v3";
+
+/**
+ * v3 attaches this map to 206 (partial) and 404 SYMBOL_NOT_FOUND responses:
+ * one entry per requested symbol that could not be resolved, with a
+ * human-readable message and, where available, "did you mean" suggestions.
+ */
+export type UnresolvedSymbols = Record<
+  string,
+  { message: string; suggestions?: string[] }
+>;
 
 export class CommodityApiError extends Error {
   code: number;
   errorType: string;
   path?: string;
+  unresolved?: UnresolvedSymbols;
 
-  constructor(code: number, errorType: string, message: string, path?: string) {
+  constructor(
+    code: number,
+    errorType: string,
+    message: string,
+    path?: string,
+    unresolved?: UnresolvedSymbols
+  ) {
     super(message);
     this.name = "CommodityApiError";
     this.code = code;
     this.errorType = errorType;
     this.path = path;
+    this.unresolved = unresolved;
   }
 }
 
@@ -25,9 +43,13 @@ function getApiKey(): string {
 }
 
 /**
- * Calls a CommodityPriceAPI v2 endpoint.
+ * Calls a CommodityPriceAPI v3 endpoint.
  * Sends the API key via both the x-api-key header AND the apiKey query
  * param, since the upstream API accepts either.
+ *
+ * v3 answers 206 (still `response.ok`) with an `unresolved` map appended to
+ * the body when some requested symbols could not be returned; the body is
+ * passed through as-is so tool results include those suggestions.
  */
 export async function callCommodityApi<T = unknown>(
   path: string,
@@ -91,7 +113,8 @@ export async function callCommodityApi<T = unknown>(
       response.status,
       body.error ?? "UNKNOWN_ERROR",
       body.message ?? `CommodityPriceAPI request failed with status ${response.status}.`,
-      body.path
+      body.path,
+      body.unresolved
     );
   }
 

@@ -221,22 +221,22 @@ Try these after setup:
 
 ## Tool Reference
 
-All 8 tools map 1:1 to CommodityPriceAPI v2 endpoints. Tools that take `symbols` accept a comma-separated list (e.g. `XAU,XAG,BRENTOIL-SPOT`). Use `list_symbols` to look up valid symbols — there are 148 across Metals, Energy, Agriculture, and more.
+All 8 tools map 1:1 to CommodityPriceAPI v3 endpoints. Tools that take `symbols` accept a comma-separated list (e.g. `XAU,XAG,BRENTOIL-SPOT`). Use `list_symbols` to look up valid symbols — there are 148 across Metals, Energy, Agriculture, and more.
 
 ### get_latest_rates
 
-`GET /v2/rates/latest` — latest rates for one or more symbols. Rates may lag up to 10 minutes depending on plan.
+`GET /v3/rates/latest` — latest rates for one or more symbols. Rates may lag up to 10 minutes depending on plan.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `symbols` | Yes | Comma-separated symbols, e.g. `XAU,XAG,BRENTOIL-SPOT` |
 | `quote` | No | Target quote currency (e.g. `EUR`). Premium/Plus plans only; omit for each symbol's default currency. |
 
-Note: if a symbol in a multi-symbol request is invalid, the API silently omits it from the response rather than returning an error. A missing symbol in the result means the symbol is wrong — check `list_symbols`.
+Note: if some symbols in a multi-symbol request are invalid, the API returns the valid rates (HTTP 206) plus an `unresolved` map — one entry per missing symbol with a message and, where available, `suggestions` ("did you mean"). If no symbol resolves, the tool returns a `SYMBOL_NOT_FOUND` error carrying the same `unresolved` map. The same applies to `get_historical_rates`, `get_time_series`, and `get_fluctuation`.
 
 ### get_gold_price
 
-`GET /v2/rates/latest/xau` — shortcut for the latest gold (XAU) rate, including bid/ask.
+`GET /v3/rates/latest/xau` — shortcut for the latest gold (XAU) rate, including bid/ask.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -244,7 +244,7 @@ Note: if a symbol in a multi-symbol request is invalid, the API silently omits i
 
 ### get_silver_price
 
-`GET /v2/rates/latest/xag` — shortcut for the latest silver (XAG) rate.
+`GET /v3/rates/latest/xag` — shortcut for the latest silver (XAG) rate.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -252,7 +252,7 @@ Note: if a symbol in a multi-symbol request is invalid, the API silently omits i
 
 ### get_historical_rates
 
-`GET /v2/rates/historical` — open/high/low/close rates for one or more symbols on a specific past date, available back to 1990-01-01. If no rate exists for that exact date, the API returns the nearest available date.
+`GET /v3/rates/historical` — open/high/low/close rates for one or more symbols on a specific past date, available back to 1990-01-01. If no rate exists for that exact date, the API returns the nearest available date.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -261,7 +261,7 @@ Note: if a symbol in a multi-symbol request is invalid, the API silently omits i
 
 ### get_time_series
 
-`GET /v2/rates/time-series` — daily historical rates for one or more symbols between two dates. Max span: 1 year.
+`GET /v3/rates/time-series` — daily historical rates for one or more symbols between two dates. Max span: 1 year.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -271,7 +271,7 @@ Note: if a symbol in a multi-symbol request is invalid, the API silently omits i
 
 ### get_fluctuation
 
-`GET /v2/rates/fluctuation` — how each symbol changed between two dates: start rate, end rate, absolute change, and percent change.
+`GET /v3/rates/fluctuation` — how each symbol changed between two dates: start rate, end rate, absolute change, and percent change.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -281,11 +281,11 @@ Note: if a symbol in a multi-symbol request is invalid, the API silently omits i
 
 ### list_symbols
 
-`GET /v2/symbols` — all supported commodity symbols with name, category, quote currency, unit, and update interval. Takes no parameters. Call this before rate tools when unsure of a symbol.
+`GET /v3/symbols` — all supported commodity symbols with name, category, quote currency, unit, and update interval. Takes no parameters. Call this before rate tools when unsure of a symbol.
 
 ### get_usage
 
-`GET /v2/usage` — current plan, quota, and usage for the configured API key. Takes no parameters.
+`GET /v3/usage` — current plan, quota, and usage for the configured API key. Takes no parameters.
 
 ## Prompt Examples
 
@@ -412,7 +412,7 @@ Example error result for an invalid symbol:
 
 ## How It Works
 
-This is a stdio MCP server that wraps the CommodityPriceAPI v2 REST API.
+This is a stdio MCP server that wraps the CommodityPriceAPI v3 REST API.
 
 At runtime:
 
@@ -457,7 +457,7 @@ COMMODITYPRICEAPI_KEY=<YOUR_KEY> npx @modelcontextprotocol/inspector node dist/c
 
 **401 errors:** Check that `COMMODITYPRICEAPI_KEY` is set in your MCP client config's `env` block.
 
-**A symbol is missing from a multi-symbol response:** The upstream API silently drops invalid symbols instead of erroring. Call `list_symbols` to find the correct symbol — e.g. Brent crude is `BRENTOIL-SPOT`, not `BRENTOIL`.
+**A symbol is missing from a multi-symbol response:** Look at the `unresolved` map in the result — each missing symbol has a message and usually `suggestions` (e.g. `BRENTOIL` → `BRENTOIL-SPOT`). If there are no suggestions, call `list_symbols` to find the correct symbol.
 
 **499 timeouts:** The upstream API did not respond in time. Increase `COMMODITYPRICEAPI_REQUEST_TIMEOUT_MS` (default: 15000 ms).
 

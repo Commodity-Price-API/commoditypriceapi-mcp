@@ -5,7 +5,7 @@ import { callCommodityApi, CommodityApiError } from "./client.js";
 const symbolsParam = z
   .string()
   .describe(
-    "Comma-separated commodity symbols, e.g. 'XAU,XAG,BRENTOIL-SPOT'. See the list_symbols tool for valid values. Invalid symbols in a multi-symbol request are silently omitted from the response, not errored."
+    "Comma-separated commodity symbols, e.g. 'XAU,XAG,BRENTOIL-SPOT'. See the list_symbols tool for valid values. If some symbols cannot be resolved, the response still succeeds (HTTP 206) with the valid rates plus an 'unresolved' map giving a message and 'did you mean' suggestions for each missing symbol. If none resolve, the error result carries the same 'unresolved' map."
   );
 
 const dateParam = z.string().describe("Date in YYYY-MM-DD format.");
@@ -33,6 +33,7 @@ function errorResult(err: unknown) {
               error: err.errorType,
               code: err.code,
               message: err.message,
+              ...(err.unresolved ? { unresolved: err.unresolved } : {}),
               guidance: guidanceFor(err.code, err.errorType),
             },
             null,
@@ -67,7 +68,7 @@ function guidanceFor(code: number, errorType: string): string {
       return "You've hit your API key's usage limit. Upgrade your plan or wait for the quota to reset.";
     case 404:
       if (errorType === "SYMBOL_NOT_FOUND") {
-        return "Call list_symbols to see valid commodity symbols.";
+        return "None of the requested symbols are valid. Check the 'unresolved' map above for suggested symbols, or call list_symbols to see all valid commodity symbols.";
       }
       return "The requested resource was not found.";
     case 429:
@@ -80,7 +81,7 @@ function guidanceFor(code: number, errorType: string): string {
 export function createServer(): McpServer {
   const server = new McpServer({
     name: "commoditypriceapi-mcp",
-    version: "1.0.1",
+    version: "1.1.0",
   });
 
   server.registerTool(
