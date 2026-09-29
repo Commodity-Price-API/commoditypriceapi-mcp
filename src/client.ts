@@ -1,14 +1,23 @@
 const BASE_URL = "https://api.commoditypriceapi.com/v3";
 
 /**
- * v3 attaches this map to 206 (partial) and 404 SYMBOL_NOT_FOUND responses:
- * one entry per requested symbol that could not be resolved, with a
- * human-readable message and, where available, "did you mean" suggestions.
+ * v3 attaches this map, keyed by the symbol the caller typed, in three cases:
+ *
+ * - 206 Partial Content: some requested symbols could not be returned. Each
+ *   entry carries a human-readable `message` and, where available, "did you
+ *   mean" `suggestions`.
+ * - 404 SYMBOL_NOT_FOUND: none of the requested symbols resolved; same shape.
+ * - 200 with `resolvedTo`: the symbol was not a catalogue code but had exactly
+ *   one match (e.g. GOLD -> XAU, or a retired code such as PL -> XPT), so v3
+ *   answered with that symbol's rate. The rate lives under `resolvedTo` in
+ *   `rates`; the entry is informational and never downgrades the status.
  */
-export type UnresolvedSymbols = Record<
-  string,
-  { message: string; suggestions?: string[] }
->;
+export type UnresolvedSymbol = {
+  message: string;
+  suggestions?: string[];
+  resolvedTo?: string;
+};
+export type UnresolvedSymbols = Record<string, UnresolvedSymbol>;
 
 export class CommodityApiError extends Error {
   code: number;
@@ -48,8 +57,10 @@ function getApiKey(): string {
  * param, since the upstream API accepts either.
  *
  * v3 answers 206 (still `response.ok`) with an `unresolved` map appended to
- * the body when some requested symbols could not be returned; the body is
- * passed through as-is so tool results include those suggestions.
+ * the body when some requested symbols could not be returned, and 200 with an
+ * `unresolved` map when a symbol was auto-resolved to its single match
+ * (`resolvedTo`). The body is passed through as-is so tool results include
+ * those notes and suggestions.
  */
 export async function callCommodityApi<T = unknown>(
   path: string,

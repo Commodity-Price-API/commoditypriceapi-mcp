@@ -221,7 +221,9 @@ Try these after setup:
 
 ## Tool Reference
 
-All 8 tools map 1:1 to CommodityPriceAPI v3 endpoints. Tools that take `symbols` accept a comma-separated list (e.g. `XAU,XAG,BRENTOIL-SPOT`). Use `list_symbols` to look up valid symbols — there are 148 across Metals, Energy, Agriculture, and more.
+All 8 tools map 1:1 to CommodityPriceAPI v3 endpoints. Tools that take `symbols` accept a comma-separated list (e.g. `XAU,XAG,XPT,BRENTOIL-SPOT`). Use `list_symbols` to look up valid symbols — there are 245 across Metals, Energy, Agriculture, and more.
+
+Precious metals use ISO 4217 codes: `XAU` (gold), `XAG` (silver), `XPT` (platinum), `XPD` (palladium). Copper is `XCU`. The retired codes `PL`, `PA`, and `HG` still work on v3 — they are auto-resolved to the new symbol (see the note below).
 
 ### get_latest_rates
 
@@ -232,7 +234,13 @@ All 8 tools map 1:1 to CommodityPriceAPI v3 endpoints. Tools that take `symbols`
 | `symbols` | Yes | Comma-separated symbols, e.g. `XAU,XAG,BRENTOIL-SPOT` |
 | `quote` | No | Target quote currency (e.g. `EUR`). Premium/Plus plans only; omit for each symbol's default currency. |
 
-Note: if some symbols in a multi-symbol request are invalid, the API returns the valid rates (HTTP 206) plus an `unresolved` map — one entry per missing symbol with a message and, where available, `suggestions` ("did you mean"). If no symbol resolves, the tool returns a `SYMBOL_NOT_FOUND` error carrying the same `unresolved` map. The same applies to `get_historical_rates`, `get_time_series`, and `get_fluctuation`.
+Note on `unresolved`: v3 appends an `unresolved` map, keyed by the symbol you typed, in three cases. The same applies to `get_historical_rates`, `get_time_series`, and `get_fluctuation`.
+
+| Case | HTTP | What the entry holds |
+|------|------|----------------------|
+| Symbol is not a catalogue code but has exactly one match (e.g. `GOLD`, or retired `PL`) | `200` | `message` + `resolvedTo` — the rate was returned under `resolvedTo` in `rates`. Informational, not a failure. |
+| Some symbols could not be returned | `206` | `message` + optional `suggestions` ("did you mean"). Valid rates are still in `rates`. |
+| No symbol resolved | `404` | Tool returns a `SYMBOL_NOT_FOUND` error carrying the same `unresolved` map. |
 
 ### get_gold_price
 
@@ -241,14 +249,16 @@ Note: if some symbols in a multi-symbol request are invalid, the API returns the
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `quote` | No | Target quote currency. Premium/Plus plans only. |
+| `include` | No | `gram`, `carat`, or `tola` — adds a per-gram rate, per-gram rates at each purity from 24k to 8k, or a per-tola rate alongside the ounce rate. |
 
 ### get_silver_price
 
-`GET /v3/rates/latest/xag` — shortcut for the latest silver (XAG) rate.
+`GET /v3/rates/latest/xag` — shortcut for the latest silver (XAG) rate, including bid/ask.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `quote` | No | Target quote currency. Premium/Plus plans only. |
+| `include` | No | `gram`, `carat`, or `tola` — adds a per-gram, per-carat, or per-tola rate alongside the ounce rate. |
 
 ### get_historical_rates
 
@@ -292,7 +302,8 @@ Note: if some symbols in a multi-symbol request are invalid, the API returns the
 ### Live prices
 
 - What's the current gold price?
-- Get the latest prices for silver, copper, and WTI crude.
+- What's gold per gram right now?
+- Get the latest prices for silver, platinum, copper, and WTI crude.
 - What's gold trading at in euros?
 
 ### Historical data
@@ -385,6 +396,35 @@ The text answers show what a client might say; exact wording depends on the mode
 }
 ```
 
+### Auto-resolved symbol
+
+**Prompt:** What's the price of GOLD and platinum?
+
+**Example answer:** Gold (XAU) is $4,386.23 and platinum (XPT) is $1,412.50 per troy ounce. Note: `GOLD` isn't a symbol code, so the API returned it under `XAU`.
+
+```json
+{
+  "success": true,
+  "timestamp": 1786617187,
+  "rates": {
+    "XAU": 4386.23,
+    "XPT": 1412.5
+  },
+  "metadata": {
+    "XAU": { "unit": "T.oz", "quote": "USD" },
+    "XPT": { "unit": "T.oz", "quote": "USD" }
+  },
+  "unresolved": {
+    "GOLD": {
+      "message": "GOLD is not a symbol code used by this API. Gold is available as \"XAU\", so its rate was returned under that symbol.",
+      "resolvedTo": "XAU"
+    }
+  }
+}
+```
+
+Status is `200` — an entry with `resolvedTo` never downgrades the response.
+
 ## Error Codes
 
 Tool calls never crash the server. Upstream errors are returned as structured tool results with `error`, `code`, `message`, and a `guidance` field so the client can explain what went wrong instead of echoing a status code.
@@ -457,7 +497,7 @@ COMMODITYPRICEAPI_KEY=<YOUR_KEY> npx @modelcontextprotocol/inspector node dist/c
 
 **401 errors:** Check that `COMMODITYPRICEAPI_KEY` is set in your MCP client config's `env` block.
 
-**A symbol is missing from a multi-symbol response:** Look at the `unresolved` map in the result — each missing symbol has a message and usually `suggestions` (e.g. `BRENTOIL` → `BRENTOIL-SPOT`). If there are no suggestions, call `list_symbols` to find the correct symbol.
+**A symbol is missing from a multi-symbol response:** Look at the `unresolved` map in the result. If the entry has `resolvedTo`, nothing is missing — the rate is in `rates` under that symbol (e.g. `GOLD` → `XAU`, `PL` → `XPT`). Otherwise each missing symbol has a message and usually `suggestions` (e.g. `OIL` → `WTIOIL-SPOT`, `BRENTOIL-SPOT`, …). If there are no suggestions, call `list_symbols` to find the correct symbol.
 
 **499 timeouts:** The upstream API did not respond in time. Increase `COMMODITYPRICEAPI_REQUEST_TIMEOUT_MS` (default: 15000 ms).
 

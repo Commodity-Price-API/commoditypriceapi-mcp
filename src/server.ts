@@ -5,10 +5,28 @@ import { callCommodityApi, CommodityApiError } from "./client.js";
 const symbolsParam = z
   .string()
   .describe(
-    "Comma-separated commodity symbols, e.g. 'XAU,XAG,BRENTOIL-SPOT'. See the list_symbols tool for valid values. If some symbols cannot be resolved, the response still succeeds (HTTP 206) with the valid rates plus an 'unresolved' map giving a message and 'did you mean' suggestions for each missing symbol. If none resolve, the error result carries the same 'unresolved' map."
+    "Comma-separated commodity symbols, e.g. 'XAU,XAG,XPT,BRENTOIL-SPOT'. Precious metals use ISO 4217 codes (XAU gold, XAG silver, XPT platinum, XPD palladium); copper is XCU. See the list_symbols tool for valid values. " +
+      "The response may include an 'unresolved' map keyed by the symbol you typed. Three cases: " +
+      "(1) HTTP 200 with an entry carrying 'resolvedTo' — the symbol was not a catalogue code but had exactly one match (e.g. GOLD -> XAU, retired PL -> XPT), so its rate was returned under the 'resolvedTo' symbol in 'rates'; this is informational, not a failure. " +
+      "(2) HTTP 206 — some symbols could not be returned; each entry has a message and, where available, 'did you mean' suggestions, while the valid rates are still in 'rates'. " +
+      "(3) If none resolve, the error result carries the same 'unresolved' map."
   );
 
 const dateParam = z.string().describe("Date in YYYY-MM-DD format.");
+
+const quoteParam = z
+  .string()
+  .optional()
+  .describe(
+    "Target quote currency code (e.g. 'USD', 'EUR'). Premium/Plus plans only; omit to use each symbol's default currency."
+  );
+
+const includeParam = z
+  .enum(["gram", "carat", "tola"])
+  .optional()
+  .describe(
+    "Add a per-unit breakdown alongside the per-troy-ounce rate: 'gram' adds a per-gram rate, 'tola' adds a per-tola rate, 'carat' adds per-gram rates at each purity from 24k down to 8k. Omit for the ounce rate only."
+  );
 
 function textResult(data: unknown) {
   return {
@@ -81,7 +99,7 @@ function guidanceFor(code: number, errorType: string): string {
 export function createServer(): McpServer {
   const server = new McpServer({
     name: "commoditypriceapi-mcp",
-    version: "1.1.0",
+    version: "1.2.0",
   });
 
   server.registerTool(
@@ -107,7 +125,7 @@ export function createServer(): McpServer {
     {
       title: "List supported commodity symbols",
       description:
-        "Returns all commodity symbols supported by CommodityPriceAPI, including category, default currency, and unit. Use this to look up a symbol before calling rate tools.",
+        "Returns all commodity symbols supported by CommodityPriceAPI, including category, default currency, and unit. Use this to look up a symbol before calling rate tools. Precious metals use ISO 4217 codes (XAU, XAG, XPT, XPD); copper is XCU.",
       inputSchema: {},
     },
     async () => {
@@ -125,15 +143,10 @@ export function createServer(): McpServer {
     {
       title: "Get latest commodity rates",
       description:
-        "Returns the latest rates for one or more commodity symbols (e.g. gold, silver, crude oil). Rates may lag up to 10 minutes depending on plan. Use 'quote' to convert to a specific currency (Premium/Plus plans only).",
+        "Returns the latest rates for one or more commodity symbols (e.g. gold, silver, crude oil). Rates may lag up to 10 minutes depending on plan. Use 'quote' to convert to a specific currency (Premium/Plus plans only). Common names with a single match (e.g. GOLD) are auto-resolved to the real symbol and flagged in 'unresolved' with 'resolvedTo'.",
       inputSchema: {
         symbols: symbolsParam,
-        quote: z
-          .string()
-          .optional()
-          .describe(
-            "Target quote currency code (e.g. 'USD', 'EUR'). Premium/Plus plans only; omit to use each symbol's default currency."
-          ),
+        quote: quoteParam,
       },
     },
     async ({ symbols, quote }) => {
@@ -151,17 +164,15 @@ export function createServer(): McpServer {
     {
       title: "Get latest gold (XAU) price",
       description:
-        "Shortcut for the latest gold (XAU) rate without needing to pass a symbols list.",
+        "Shortcut for the latest gold (XAU) rate, with bid/ask, without needing to pass a symbols list. Use 'include' to add a per-gram, per-tola, or per-carat breakdown.",
       inputSchema: {
-        quote: z
-          .string()
-          .optional()
-          .describe("Target quote currency code. Premium/Plus plans only."),
+        quote: quoteParam,
+        include: includeParam,
       },
     },
-    async ({ quote }) => {
+    async ({ quote, include }) => {
       try {
-        const data = await callCommodityApi("/rates/latest/xau", { quote });
+        const data = await callCommodityApi("/rates/latest/xau", { quote, include });
         return textResult(data);
       } catch (err) {
         return errorResult(err);
@@ -174,17 +185,15 @@ export function createServer(): McpServer {
     {
       title: "Get latest silver (XAG) price",
       description:
-        "Shortcut for the latest silver (XAG) rate without needing to pass a symbols list.",
+        "Shortcut for the latest silver (XAG) rate, with bid/ask, without needing to pass a symbols list. Use 'include' to add a per-gram, per-tola, or per-carat breakdown.",
       inputSchema: {
-        quote: z
-          .string()
-          .optional()
-          .describe("Target quote currency code. Premium/Plus plans only."),
+        quote: quoteParam,
+        include: includeParam,
       },
     },
-    async ({ quote }) => {
+    async ({ quote, include }) => {
       try {
-        const data = await callCommodityApi("/rates/latest/xag", { quote });
+        const data = await callCommodityApi("/rates/latest/xag", { quote, include });
         return textResult(data);
       } catch (err) {
         return errorResult(err);
