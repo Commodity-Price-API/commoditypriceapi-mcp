@@ -233,6 +233,7 @@ Precious metals use ISO 4217 codes: `XAU` (gold), `XAG` (silver), `XPT` (platinu
 |-----------|----------|-------------|
 | `symbols` | Yes | Comma-separated symbols, e.g. `XAU,XAG,BRENTOIL-SPOT` |
 | `quote` | No | Target quote currency (e.g. `EUR`). Premium/Plus plans only; omit for each symbol's default currency. |
+| `metadata` | No | `true` (default) or `false`. `false` omits the `metadata` map (per-symbol unit and quote currency) from the response. |
 
 Note on `unresolved`: v3 appends an `unresolved` map, keyed by the symbol you typed, in three cases. The same applies to `get_historical_rates`, `get_time_series`, and `get_fluctuation`.
 
@@ -250,6 +251,7 @@ Note on `unresolved`: v3 appends an `unresolved` map, keyed by the symbol you ty
 |-----------|----------|-------------|
 | `quote` | No | Target quote currency. Premium/Plus plans only. |
 | `include` | No | `gram`, `carat`, or `tola` — adds a per-gram rate, per-gram rates at each purity from 24k to 8k, or a per-tola rate alongside the ounce rate. |
+| `metadata` | No | `true` (default) or `false`. `false` omits the `metadata` map (per-symbol unit and quote currency) from the response. |
 
 ### get_silver_price
 
@@ -259,6 +261,7 @@ Note on `unresolved`: v3 appends an `unresolved` map, keyed by the symbol you ty
 |-----------|----------|-------------|
 | `quote` | No | Target quote currency. Premium/Plus plans only. |
 | `include` | No | `gram`, `carat`, or `tola` — adds a per-gram, per-carat, or per-tola rate alongside the ounce rate. |
+| `metadata` | No | `true` (default) or `false`. `false` omits the `metadata` map (per-symbol unit and quote currency) from the response. |
 
 ### get_historical_rates
 

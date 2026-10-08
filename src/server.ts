@@ -28,6 +28,18 @@ const includeParam = z
     "Add a per-unit breakdown alongside the per-troy-ounce rate: 'gram' adds a per-gram rate, 'tola' adds a per-tola rate, 'carat' adds per-gram rates at each purity from 24k down to 8k. Omit for the ounce rate only."
   );
 
+const metadataParam = z
+  .boolean()
+  .optional()
+  .describe(
+    "Whether to include the 'metadata' map (per-symbol unit and quote currency) in the response. Defaults to true. Set false to omit it and get a smaller payload."
+  );
+
+/** v3 only honours an explicit `metadata=false`; anything else is the default (true). */
+function metadataFlag(metadata: boolean | undefined): string | undefined {
+  return metadata === false ? "false" : undefined;
+}
+
 function textResult(data: unknown) {
   return {
     content: [
@@ -99,7 +111,7 @@ function guidanceFor(code: number, errorType: string): string {
 export function createServer(): McpServer {
   const server = new McpServer({
     name: "commoditypriceapi-mcp",
-    version: "1.2.0",
+    version: "1.2.1",
   });
 
   server.registerTool(
@@ -143,15 +155,20 @@ export function createServer(): McpServer {
     {
       title: "Get latest commodity rates",
       description:
-        "Returns the latest rates for one or more commodity symbols (e.g. gold, silver, crude oil). Rates may lag up to 10 minutes depending on plan. Use 'quote' to convert to a specific currency (Premium/Plus plans only). Common names with a single match (e.g. GOLD) are auto-resolved to the real symbol and flagged in 'unresolved' with 'resolvedTo'.",
+        "Returns the latest rates for one or more commodity symbols (e.g. gold, silver, crude oil). Rates may lag up to 10 minutes depending on plan. Use 'quote' to convert to a specific currency (Premium/Plus plans only). Common names with a single match (e.g. GOLD) are auto-resolved to the real symbol and flagged in 'unresolved' with 'resolvedTo'. Set 'metadata' to false to omit the per-symbol unit/quote map.",
       inputSchema: {
         symbols: symbolsParam,
         quote: quoteParam,
+        metadata: metadataParam,
       },
     },
-    async ({ symbols, quote }) => {
+    async ({ symbols, quote, metadata }) => {
       try {
-        const data = await callCommodityApi("/rates/latest", { symbols, quote });
+        const data = await callCommodityApi("/rates/latest", {
+          symbols,
+          quote,
+          metadata: metadataFlag(metadata),
+        });
         return textResult(data);
       } catch (err) {
         return errorResult(err);
@@ -164,15 +181,20 @@ export function createServer(): McpServer {
     {
       title: "Get latest gold (XAU) price",
       description:
-        "Shortcut for the latest gold (XAU) rate, with bid/ask, without needing to pass a symbols list. Use 'include' to add a per-gram, per-tola, or per-carat breakdown.",
+        "Shortcut for the latest gold (XAU) rate, with bid/ask, without needing to pass a symbols list. Use 'include' to add a per-gram, per-tola, or per-carat breakdown. Set 'metadata' to false to omit the unit/quote map.",
       inputSchema: {
         quote: quoteParam,
         include: includeParam,
+        metadata: metadataParam,
       },
     },
-    async ({ quote, include }) => {
+    async ({ quote, include, metadata }) => {
       try {
-        const data = await callCommodityApi("/rates/latest/xau", { quote, include });
+        const data = await callCommodityApi("/rates/latest/xau", {
+          quote,
+          include,
+          metadata: metadataFlag(metadata),
+        });
         return textResult(data);
       } catch (err) {
         return errorResult(err);
@@ -185,15 +207,20 @@ export function createServer(): McpServer {
     {
       title: "Get latest silver (XAG) price",
       description:
-        "Shortcut for the latest silver (XAG) rate, with bid/ask, without needing to pass a symbols list. Use 'include' to add a per-gram, per-tola, or per-carat breakdown.",
+        "Shortcut for the latest silver (XAG) rate, with bid/ask, without needing to pass a symbols list. Use 'include' to add a per-gram, per-tola, or per-carat breakdown. Set 'metadata' to false to omit the unit/quote map.",
       inputSchema: {
         quote: quoteParam,
         include: includeParam,
+        metadata: metadataParam,
       },
     },
-    async ({ quote, include }) => {
+    async ({ quote, include, metadata }) => {
       try {
-        const data = await callCommodityApi("/rates/latest/xag", { quote, include });
+        const data = await callCommodityApi("/rates/latest/xag", {
+          quote,
+          include,
+          metadata: metadataFlag(metadata),
+        });
         return textResult(data);
       } catch (err) {
         return errorResult(err);
