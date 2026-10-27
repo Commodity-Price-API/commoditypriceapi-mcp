@@ -1,6 +1,7 @@
 {
   "name": "@commoditypriceapi/mcp",
-  "version": "1.2.2",
+  "version": "1.2.3",
+  "mcpName": "io.github.Commodity-Price-API/commoditypriceapi-mcp",
   "description": "Official MCP server for CommodityPriceAPI — real-time and historical commodity rates (gold, silver, oil, and 130+ more) as MCP tools for Claude, Cursor, Windsurf, and any MCP client.",
   "keywords": [
     "mcp",

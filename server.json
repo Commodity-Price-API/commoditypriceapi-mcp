@@ -1,0 +1,39 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Commodity-Price-API/commoditypriceapi-mcp",
+  "title": "CommodityPriceAPI",
+  "description": "Real-time and historical prices for gold, silver, oil, and 130+ other commodities.",
+  "websiteUrl": "https://commoditypriceapi.com",
+  "repository": {
+    "url": "https://github.com/Commodity-Price-API/commoditypriceapi-mcp",
+    "source": "github"
+  },
+  "version": "1.2.3",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@commoditypriceapi/mcp",
+      "version": "1.2.3",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "COMMODITYPRICEAPI_KEY",
+          "description": "Your CommodityPriceAPI key (get one at https://commoditypriceapi.com/auth/signup)",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "COMMODITYPRICEAPI_REQUEST_TIMEOUT_MS",
+          "description": "Upstream request timeout in milliseconds (default 15000)",
+          "isRequired": false,
+          "format": "number",
+          "default": "15000"
+        }
+      ]
+    }
+  ]
+}

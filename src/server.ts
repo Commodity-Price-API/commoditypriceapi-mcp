@@ -111,7 +111,7 @@ function guidanceFor(code: number, errorType: string): string {
 export function createServer(): McpServer {
   const server = new McpServer({
     name: "commoditypriceapi-mcp",
-    version: "1.2.1",
+    version: "1.2.3",
   });
 
   server.registerTool(
