@@ -137,12 +137,30 @@ export function createServer(): McpServer {
     {
       title: "List supported commodity symbols",
       description:
-        "Returns all commodity symbols supported by CommodityPriceAPI, including category, default currency, and unit. Use this to look up a symbol before calling rate tools. Precious metals use ISO 4217 codes (XAU, XAG, XPT, XPD); copper is XCU.",
-      inputSchema: {},
+        "Returns all commodity symbols supported by CommodityPriceAPI, including category, default currency, and unit. Use this to look up a symbol before calling rate tools. Precious metals use ISO 4217 codes (XAU, XAG, XPT, XPD); copper is XCU. " +
+        "Dated futures contracts (e.g. WTIOIL-FUT-DEC26, the December 2026 WTI contract) are listed as their own symbols with 'contract', 'deliveryMonth', 'expiresAt' and 'underlying' (the continuous parent such as WTIOIL-FUT); expired contracts are hidden unless includeExpired is set. Pass 'underlying' to list one parent's live months. A contract's latest price comes from get_latest_rates and its daily open/high/low/close (close = the exchange settlement) from get_historical_rates / get_time_series.",
+      inputSchema: {
+        underlying: z
+          .string()
+          .optional()
+          .describe("Only the dated futures contracts of this continuous parent symbol, e.g. 'WTIOIL-FUT'."),
+        contract: z
+          .enum(["spot", "futures"])
+          .optional()
+          .describe("Only symbols of this contract kind."),
+        includeExpired: z
+          .boolean()
+          .optional()
+          .describe("Also list expired futures contracts (hidden by default)."),
+      },
     },
-    async () => {
+    async ({ underlying, contract, includeExpired }) => {
       try {
-        const data = await callCommodityApi("/symbols");
+        const data = await callCommodityApi("/symbols", {
+          underlying,
+          contract,
+          includeExpired: includeExpired ? "true" : undefined,
+        });
         return textResult(data);
       } catch (err) {
         return errorResult(err);
